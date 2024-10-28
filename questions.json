@@ -1,0 +1,68 @@
+{
+  "Set": [
+    {
+      "question": "Which of the following is true about Python sets?",
+      "options": [
+        "They are unordered",
+        "They allow duplicate values",
+        "They are indexed",
+        "None of the above"
+      ],
+      "answer": "They are unordered"
+    },
+    {
+      "question": "How do you create an empty set in Python?",
+      "options": ["{}", "set()", "[]", "None of the above"],
+      "answer": "set()"
+    },
+    {
+      "question": "Which method is used to add an element to a set?",
+      "options": ["add()", "append()", "insert()", "push()"],
+      "answer": "add()"
+    }
+  ],
+  "Tuple": [
+    {
+      "question": "Which of the following is true about Python tuples?",
+      "options": [
+        "They are mutable",
+        "They allow duplicate values",
+        "They are unordered",
+        "None of the above"
+      ],
+      "answer": "They allow duplicate values"
+    },
+    {
+      "question": "How do you create a tuple with a single element?",
+      "options": ["(1)", "(1,)", "[1]", "None of the above"],
+      "answer": "(1,)"
+    },
+    {
+      "question": "Which method can be used to count the number of occurrences of an element in a tuple?",
+      "options": ["count()", "find()", "index()", "None of the above"],
+      "answer": "count()"
+    }
+  ],
+  "Anonymous Function": [
+    {
+      "question": "What keyword is used to create an anonymous function in Python?",
+      "options": ["lambda", "def", "function", "anon"],
+      "answer": "lambda"
+    },
+    {
+      "question": "What is the output of the following code: `(lambda x: x * 2)(5)`?",
+      "options": ["10", "25", "5", "None of the above"],
+      "answer": "10"
+    },
+    {
+      "question": "Which of the following is true about lambda functions?",
+      "options": [
+        "They can have multiple expressions",
+        "They can have multiple statements",
+        "They are defined using `def`",
+        "They are limited to a single expression"
+      ],
+      "answer": "They are limited to a single expression"
+    }
+  ]
+}

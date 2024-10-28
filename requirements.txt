@@ -1,0 +1,8 @@
+pandas
+torch
+transformers
+sentence-transformers
+pymupdf
+lancedb
+pyarrow
+numpy

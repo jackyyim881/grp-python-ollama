@@ -1,0 +1,14 @@
+# Ignore log files
+*.log
+
+# Ignore database files
+*.db
+
+# Ignore virtual environment folder
+venv/
+
+# Ignore Python cache
+__pycache__/
+
+# Ignore environment configuration files
+.env.development
