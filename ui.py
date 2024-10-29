@@ -1,16 +1,16 @@
 # ui.py
 import streamlit as st
-from streamlit_elements import elements, mui, nivo
+from streamlit_elements import elements, mui
 from config import Config
 import random
 
 
 class UIService:
-    def __init__(self, auth_service, db_service, question_loader, llm_service):
-        self.auth_service = auth_service
+    def __init__(self, db_service, question_loader, llm_service):
         self.db_service = db_service
         self.question_loader = question_loader
         self.llm_service = llm_service
+
         # Encouragement messages
         self.encouragement_messages_correct = [
             "Excellent work!",
@@ -32,60 +32,44 @@ class UIService:
         """
         Render the main UI of the application.
         """
-        st.title(Config.APP_NAME)
+        # User information is already handled in app.py
+        username = st.session_state.user.get('name', 'User')
 
-        # Render authentication components
-        self.auth_service.render_auth()
+        # Fetch login times and progress
+        email = st.session_state.user.get('preferred_username', 'unknown')
+        login_count = self.db_service.get_login_count(email)
+        total_questions_answered = self.db_service.get_total_questions_answered(
+            email)
+        total_correct_answers = self.db_service.get_total_correct_answers(
+            email)
 
-        if st.session_state.user_state['logged_in']:
-            username = st.session_state.user_state['username']
-
-            # Fetch login times and progress
-            login_count = self.db_service.get_login_count(username)
-            total_questions_answered = self.db_service.get_total_questions_answered(
-                username)
-            total_correct_answers = self.db_service.get_total_correct_answers(
-                username)
-
-            # Fetch previous login time
-            previous_login_time = self.db_service.get_previous_login_time(
-                username)
-            if previous_login_time:
-                st.sidebar.write(f"Your last login was on {
-                                 previous_login_time}")
-            else:
-                st.sidebar.write("This is your first login!")
-
-            # Provide encouragement based on login count
-            if login_count == 1:
-                st.sidebar.write(
-                    "Welcome to your first session! Let's get started!")
-            elif login_count <= 5:
-                st.sidebar.write(f"Welcome back! This is your {
-                                 login_count}th session. Keep up the good work!")
-            else:
-                st.sidebar.write(f"You're on a roll! This is your {
-                                 login_count}th session. Keep pushing forward!")
-
-            # Provide encouragement based on progress
-            if total_questions_answered == 0:
-                st.sidebar.write(
-                    "You haven't answered any questions yet. Let's dive in!")
-            else:
-                st.sidebar.write(f"You've answered {total_questions_answered} questions with {
-                                 total_correct_answers} correct answers. Keep it up!")
-
-            # Display sidebar menu and main content
-            self.sidebar_menu()
-
-            if st.session_state.view_results:
-                self.show_results()
-                self.hello_world()
-            else:
-                self.show_questions()
+        # Provide encouragement based on login count
+        if login_count == 0:
+            st.sidebar.write(
+                "Welcome to your first session! Let's get started!")
+        elif login_count <= 5:
+            st.sidebar.write(f"Welcome back! This is your {
+                             login_count}th session. Keep up the good work!")
         else:
-            # User is not logged in
-            st.write("Please log in to continue.")
+            st.sidebar.write(f"You're on a roll! This is your {
+                             login_count}th session. Keep pushing forward!")
+
+        # Provide encouragement based on progress
+        if total_questions_answered == 0:
+            st.sidebar.write(
+                "You haven't answered any questions yet. Let's dive in!")
+        else:
+            st.sidebar.write(f"You've answered {total_questions_answered} questions with {
+                             total_correct_answers} correct answers. Keep it up!")
+
+        # Display sidebar menu and main content
+        self.sidebar_menu()
+
+        if st.session_state.get('view_results', False):
+            self.show_results()
+            self.hello_world()
+        else:
+            self.show_questions()
 
     def sidebar_menu(self):
         st.sidebar.success("You are logged in!")
@@ -103,8 +87,8 @@ class UIService:
 
     def show_results(self):
         st.subheader("Assessment Results")
-        username = st.session_state.user_state['username']
-        results = self.db_service.fetch_results(username)
+        email = st.session_state.user.get('preferred_username', 'unknown')
+        results = self.db_service.fetch_results(email)
         if results:
             correct_count = sum(result[4] for result in results)
             total = len(results)
@@ -125,7 +109,6 @@ class UIService:
 
     def hello_world(self):
         with elements("new_element"):
-
             mui.Typography(variant="h1", children="Hello World!")
 
     def show_summary_graph(self, results):
@@ -170,19 +153,15 @@ class UIService:
                         correct = 1 if answer == q['answer'] else 0
                         if correct:
                             st.success("Correct! Great job!")
-                            encouragement = random.choice(
-                                self.encouragement_messages_correct)
-                            st.write(encouragement)
                         else:
                             st.error("Oops! That's not correct. Keep trying!")
-                            encouragement = random.choice(
-                                self.encouragement_messages_incorrect)
-                            st.write(encouragement)
                         st.session_state.submitted_questions.add(i)
 
                         # Store the result
+                        email = st.session_state.user.get(
+                            'preferred_username', 'unknown')
                         self.db_service.insert_result(
-                            username=st.session_state.user_state['username'],
+                            username=email,
                             topic=topic,
                             question=q['question'],
                             user_answer=answer,
@@ -190,6 +169,17 @@ class UIService:
                             correct=correct,
                             explanation=''
                         )
+
+                        # Fetch updated performance data
+                        performance_data = self.db_service.get_student_performance(
+                            email)
+
+                        # Get encouragement from LLM
+                        encouragement = self.llm_service.get_encouragement(
+                            performance_data)
+
+                        # Display the LLM-generated encouragement
+                        st.write(encouragement)
 
             # Final encouragement and explanations
             if len(st.session_state.submitted_questions) == len(topic_questions) and topic_questions:
@@ -203,8 +193,10 @@ class UIService:
                         f"**Explanation for Question {i + 1}:** {explanation}")
 
                     # Update the explanation in the database
+                    email = st.session_state.user.get(
+                        'preferred_username', 'unknown')
                     self.db_service.update_explanation(
-                        username=st.session_state.user_state['username'],
+                        username=email,
                         topic=topic,
                         question=q['question'],
                         explanation=explanation

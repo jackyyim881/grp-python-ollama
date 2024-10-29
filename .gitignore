@@ -12,3 +12,5 @@ __pycache__/
 
 # Ignore environment configuration files
 .env.development
+
+.env

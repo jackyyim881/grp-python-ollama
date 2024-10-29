@@ -35,18 +35,31 @@ class Config:
 
     # Questions File
     QUESTIONS_FILEPATH = os.getenv('QUESTIONS_FILEPATH', 'questions.json')
+   # Azure AD Settings
+    CLIENT_ID = os.getenv('CLIENT_ID')
+    CLIENT_SECRET = os.getenv('CLIENT_SECRET')
+    TENANT_ID = os.getenv('TENANT_ID')
+    AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
+    REDIRECT_PATH = os.getenv('REDIRECT_PATH', '/redirect')
+    SCOPE = [os.getenv('SCOPE', 'User.Read')]
 
     # Authentication Credentials (For simplicity; consider more secure methods for production)
-    USERS = {
-        "student1": "password1",
-        "student2": "password2",
-        "student3": "password3"
-    }
+    # USERS = {
+    #     "student1": "password1",
+    #     "student2": "password2",
+    #     "student3": "password3"
+    # }
 
 
 # Validate required configurations
-required_configs = ['SECRET_KEY', 'DATABASE_PATH',
-                    'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'QUESTIONS_FILEPATH']
+required_configs = [
+    'SECRET_KEY', 'DATABASE_PATH',
+    'OLLAMA_BASE_URL', 'OLLAMA_MODEL',
+    'QUESTIONS_FILEPATH', 'CLIENT_ID',
+    'CLIENT_SECRET', 'TENANT_ID'
+]
+
+
 missing_configs = [
     cfg for cfg in required_configs if not getattr(Config, cfg, None)]
 

@@ -83,13 +83,16 @@ class DatabaseService:
 
     def insert_login_time(self, username, login_time):
         try:
+            print(f"Inserting login time for username: {
+                username}, login_time: {login_time}")  # Debugging
             self.cursor.execute('''
-                    INSERT INTO user_logins (username, login_time) VALUES (?, ?)
-                ''', (username, login_time))
+                INSERT INTO user_logins (username, login_time) VALUES (?, ?)
+            ''', (username, login_time))
             self.conn.commit()
             logger.info("Inserted login time for user.")
         except sqlite3.Error as e:
             logger.error(f"Database insertion error: {e}")
+            print(f"Database insertion error: {e}")  # Debugging
 
     def get_login_count(self, username):
         try:
