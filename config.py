@@ -43,12 +43,12 @@ class Config:
     REDIRECT_PATH = os.getenv('REDIRECT_PATH', '/redirect')
     SCOPE = [os.getenv('SCOPE', 'User.Read')]
 
-    # Authentication Credentials (For simplicity; consider more secure methods for production)
-    # USERS = {
-    #     "student1": "password1",
-    #     "student2": "password2",
-    #     "student3": "password3"
-    # }
+    AZURE_FACE_KEY = os.getenv('AZURE_FACE_KEY')
+    AZURE_FACE_ENDPOINT = os.getenv('AZURE_FACE_ENDPOINT')
+    APP_PATH = '/app'
+    BASE_URL = os.getenv('BASE_URL', 'http://localhost:8501')
+
+    REDIRECT_URI = os.getenv('REDIRECT_URI', 'http://localhost:8501')
 
 
 # Validate required configurations

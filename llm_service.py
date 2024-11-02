@@ -31,16 +31,16 @@ class LLMService:
     def get_encouragement(self, performance_data):
         try:
             prompt = f"""
-You are a supportive Python programming tutor.
+    You are a supportive Python programming tutor.
 
-Based on the student's performance data:
-- Total Questions Answered: {performance_data['total_answered']}
-- Total Correct Answers: {performance_data['total_correct']}
-- Topics Attempted: {', '.join(performance_data['topics_attempted'])}
-- Topics Struggled With: {', '.join(performance_data['topics_struggled'])}
+    Based on the student's performance data:
+    - Total Questions Answered: {performance_data['total_answered']}
+    - Total Correct Answers: {performance_data['total_correct']}
+    - Topics Attempted: {', '.join(performance_data['topics_attempted'])}
+    - Topics Struggled With: {', '.join(performance_data['topics_struggled'])}
 
-Provide an encouraging message to the student that acknowledges their efforts, highlights their strengths, and offers advice on how to improve on the topics they are struggling with.
-"""
+    Provide an encouraging message to the student that acknowledges their efforts, highlights their strengths, and offers advice on how to improve on the topics they are struggling with. Please use more emojis in your response to make it engaging and motivating. 😊🎉👍
+    """
             encouragement = self.llm.invoke(prompt)
             logger.info("Fetched encouragement from LLM.")
             return encouragement.strip()

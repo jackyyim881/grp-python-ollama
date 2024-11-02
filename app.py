@@ -61,6 +61,21 @@ def get_user_profile(token):
     return response.json()
 
 
+def get_user_photo(token):
+    """Fetch user's profile photo from Microsoft Graph API"""
+    graph_endpoint = 'https://graph.microsoft.com/v1.0/me/photo/$value'
+    headers = {'Authorization': f'Bearer {token}'}
+
+    try:
+        response = requests.get(graph_endpoint, headers=headers)
+        if response.status_code == 200:
+            return response.content
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching user photo: {e}")
+        return None
+
+
 def main():
     st.set_page_config(page_title=Config.APP_NAME)
     st.title(Config.APP_NAME)
@@ -106,12 +121,27 @@ def main():
         st.sidebar.write(f"Login time: {login_time}")
         db_service.insert_login_time(username, login_time)
 
+        # how many login time in users
+        login_count = db_service.get_login_count(username)
+        st.sidebar.write(f"Login count: {login_count}")
+
+        if login_count == 0:
+            st.sidebar.write(
+                "Welcome to your first session! Let's get started!")
+        elif login_count <= 5:
+            st.sidebar.write(f"Welcome back! This is your {
+                             login_count}th session. Keep up the good work!")
+        else:
+            st.sidebar.write(f"You're on a roll! This is your {
+                             login_count}th session. Keep pushing forward!")
+
         if st.sidebar.button("Logout"):
             st.session_state.clear()
             st.rerun()
 
         # Render the main UI
         ui_service.render()
+
     else:
         # User is not logged in, show login button
         sign_in_url = get_sign_in_url()
