@@ -2,6 +2,7 @@
 import sqlite3
 from config import Config
 from logger import setup_logger
+import datetime
 
 logger = setup_logger()
 
@@ -72,6 +73,103 @@ class DatabaseService:
         except sqlite3.Error as e:
             logger.error(f"Error initializing tables: {e}")
             raise
+
+    def create_achievement(self, name, description, criteria):
+        try:
+            self.cursor.execute('''
+                    INSERT INTO achievements (name, description, criteria)
+                    VALUES (?, ?, ?)
+                ''', (name, description, criteria))
+            self.conn.commit()
+            logger.info(f"Created achievement: {name}")
+            return True
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Integrity Error creating achievement {name}: {e}")
+            return False
+        except sqlite3.Error as e:
+            logger.error(f"Database Error creating achievement {name}: {e}")
+            return False
+
+    # Read all achievements
+    def read_achievements(self):
+        try:
+            self.cursor.execute('''
+                SELECT id, name, description, criteria FROM achievements
+            ''')
+            achievements = self.cursor.fetchall()
+            logger.info("Fetched all achievements.")
+            return achievements
+        except sqlite3.Error as e:
+            logger.error(f"Database fetch error for achievements: {e}")
+            return []
+
+    # Update an existing achievement
+    def update_achievement(self, achievement_id, name, description, criteria):
+        try:
+            self.cursor.execute('''
+                UPDATE achievements
+                SET name = ?, description = ?, criteria = ?
+                WHERE id = ?
+            ''', (name, description, criteria, achievement_id))
+            self.conn.commit()
+            logger.info(f"Updated achievement ID {achievement_id}")
+            return True
+        except sqlite3.Error as e:
+            logger.error(f"Database update error for achievement ID {
+                         achievement_id}: {e}")
+            return False
+
+    # Delete an achievement
+    def delete_achievement(self, achievement_id):
+        try:
+            self.cursor.execute('''
+                DELETE FROM achievements WHERE id = ?
+            ''', (achievement_id,))
+            self.conn.commit()
+            logger.info(f"Deleted achievement ID {achievement_id}")
+            return True
+        except sqlite3.Error as e:
+            logger.error(f"Database deletion error for achievement ID {
+                         achievement_id}: {e}")
+            return False
+
+    def is_quiz_completed_after_midnight(self, username):
+        try:
+            self.cursor.execute('''
+                SELECT achieved_at FROM user_achievements
+                WHERE username = ? ORDER BY achieved_at DESC LIMIT 1
+            ''', (username,))
+            result = self.cursor.fetchone()
+            if result:
+                achieved_time = datetime.strptime(
+                    result[0], '%Y-%m-%dT%H:%M:%S')
+                return achieved_time.hour >= 0 and achieved_time.hour < 6
+            return False
+        except sqlite3.Error as e:
+            logger.error(f"Database fetch error: {e}")
+            return False
+
+    def get_user_by_username(self, username):
+        try:
+            self.cursor.execute('''
+                SELECT * FROM users WHERE username = ?
+            ''', (username,))
+            user = self.cursor.fetchone()
+            return user  # This will be a tuple representing the user record
+        except sqlite3.Error as e:
+            logger.error(f"Database fetch error for user {username}: {e}")
+            return None
+
+    def insert_user(self, username, display_name=None, student_id=None, enrollment_date=None):
+        try:
+            self.cursor.execute('''
+                INSERT INTO users (username, display_name, student_id, enrollment_date)
+                VALUES (?, ?, ?, ?)
+            ''', (username, display_name, student_id, enrollment_date))
+            self.conn.commit()
+            logger.info(f"Inserted new user: {username}")
+        except sqlite3.Error as e:
+            logger.error(f"Database insertion error: {e}")
 
     def insert_result(self, username, topic, question, user_answer, correct_answer, correct, explanation):
         try:

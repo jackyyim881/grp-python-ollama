@@ -7,7 +7,6 @@ from datetime import datetime
 from database import DatabaseService
 from PIL import Image
 from app import get_sign_in_url, generate_sidebar_links
-import plotly.express as px
 
 
 def add_custom_css():
@@ -17,22 +16,22 @@ def add_custom_css():
         .achievement-card {
             background-color: #ffffff;
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.2s;
         }
         .achievement-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transform: translateY(-5px);
         }
         .achievement-icon {
-            font-size: 60px;
-            margin-bottom: 15px;
+            font-size: 50px;
+            color: #FFD700;
+            margin-bottom: 10px;
         }
         .locked {
-            opacity: 0.6;
+            opacity: 0.5;
         }
         .metric-container {
             display: flex;
@@ -48,14 +47,12 @@ def add_custom_css():
 
 def display_achievement(achievement, is_unlocked):
     icon = '🏆' if is_unlocked else '🔒'
-    color = '#FFD700' if is_unlocked else '#A9A9A9'
-    background = '#fefae0' if is_unlocked else '#ececec'
+    locked_class = '' if is_unlocked else 'locked'
     st.markdown(f"""
-        <div class="achievement-card" style="background-color: {background};">
-            <div class="achievement-icon" style="color: {color};">{icon}</div>
+        <div class="achievement-card {locked_class}">
+            <div class="achievement-icon">{icon}</div>
             <h3>{achievement['name']}</h3>
             <p>{achievement['description']}</p>
-            <p><strong>Target:</strong>{achievement['target']}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -160,22 +157,6 @@ def save_feedback(username, feedback):
         st.error(f"Error saving feedback: {e}")
 
 
-def calculate_progress(current, target):
-    """
-    Calculate progress percentage.
-
-    Args:
-        current (float): Current total value.
-        target (float): Target value to achieve.
-
-    Returns:
-        float: Progress percentage (0 to 1).
-    """
-    if target == 0:
-        return 0
-    return min(current / target, 1.0)
-
-
 def main():
     """Main function to handle authentication and render achievements page"""
     add_custom_css()
@@ -223,71 +204,25 @@ def main():
                 is_unlocked = achievement[1] in unlocked_achievements
                 display_achievement({
                     'name': achievement[1],
-                    'description': achievement[2],
-                    'target': achievement[3]  # 假設成就數據包含目標值
+                    'description': achievement[2]
                 }, is_unlocked)
 
-    # Show progress stats with progress bars
+    # Show progress stats
     if performance:
         st.markdown("---")
         st.subheader("📊 Your Progress")
+        col1, col2, col3 = st.columns(3)
 
-        # Define achievements and their targets based on total_answered
-        achievements_progress = {
-            'First Steps': {
-                'current': performance['total_answered'],
-                'target': 1,
-                'description': 'Answer at least 1 question'
-            },
-            'Quick Learner': {
-                'current': performance['total_answered'],
-                'target': 5,
-                'description': 'Answer at least 5 questions with an accuracy of 60%'
-            },
-            'Quiz Master': {
-                'current': performance['total_correct'],
-                'target': 10,
-                'description': 'Answer at least 10 questions correctly'
-            },
-            'Topic Explorer': {
-                'current': len(performance['topics_attempted']),
-                'target': 3,
-                'description': 'Attempt at least 3 different topics'
-            },
-            'Master of Python': {
-                'current': performance['total_answered'],
-                'target': 20,
-                'description': 'Answer at least 20 questions with an accuracy of 90% and no struggled topics'
-            }
-        }
-
-        for achievement_name, data in achievements_progress.items():
-            target = data['target']
-            current = data['current']
-            description = data['description']
-
-            if achievement_name == 'Master of Python':
-                # Special condition for Master of Python
-                if performance['total_correct'] / performance['total_answered'] < 0.9 or len(performance['topics_struggled']) > 0:
-                    target = 0  # Indicate not achievable
-                    progress = 0
-                else:
-                    progress = calculate_progress(current, target)
-            elif achievement_name == 'Quick Learner':
-                # Include correct rate
-                accuracy = (performance['total_correct'] / performance['total_answered']
-                            ) * 100 if performance['total_answered'] > 0 else 0
-                if accuracy < 60:
-                    progress = calculate_progress(current, target)
-                else:
-                    progress = calculate_progress(current, target)
-            else:
-                progress = calculate_progress(current, target)
-
-            st.markdown(f"**{achievement_name}**: {description}")
-            st.progress(progress)
-            st.write(f"{current} / {target}")
-            st.write("")
+        with col1:
+            st.metric("Questions Answered", performance['total_answered'])
+        with col2:
+            accuracy = (performance['total_correct'] / performance['total_answered']
+                        * 100) if performance['total_answered'] > 0 else 0
+            st.metric("Accuracy", f"{accuracy:.1f}%")
+        with col3:
+            topics_mastered = len(
+                performance['topics_attempted']) - len(performance['topics_struggled'])
+            st.metric("Topics Mastered", topics_mastered)
 
     # Show feedback form
     st.markdown("---")
@@ -300,8 +235,6 @@ def main():
                 st.success("Thank you for your feedback! 🙏")
             else:
                 st.warning("Please enter some feedback before submitting.")
-
-    # Sidebar Navigation
     with st.sidebar:
         # Only show pages if the user is logged in
         if st.session_state.get("user"):
@@ -311,12 +244,6 @@ def main():
             st.write("Please log in to access the application.")
             st.markdown(
                 f"[Click here to log in with Azure AD]({get_sign_in_url()})")
-
-    # Optionally, add a certificate download button
-    with st.container():
-        if st.button("Download Achievement Certificate"):
-            # Implement certificate generation logic
-            st.success("Certificate downloaded!", icon="✅")
 
 
 if __name__ == "__main__":

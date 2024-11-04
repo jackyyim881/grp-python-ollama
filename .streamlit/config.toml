@@ -1,0 +1,4 @@
+[server]
+server = true  
+[client]
+showSidebarNavigation = false

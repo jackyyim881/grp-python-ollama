@@ -1,20 +1,14 @@
 # pages/profile.py
 
 import streamlit as st
-import pandas as pd
+import json
 import os
 from PIL import Image
 import plotly.express as px
 from database import DatabaseService
 from datetime import datetime
-from io import BytesIO
-from app import (
-    get_user_profile,
-    get_user_photo,
-    get_sign_in_url,
-    generate_sidebar_links
-)
-
+from database import DatabaseService
+from app import get_user_profile, get_user_photo, get_sign_in_url, generate_sidebar_links
 st.set_page_config(page_title="Profile")
 
 
@@ -25,6 +19,28 @@ def is_authenticated():
     return 'user' in st.session_state and st.session_state.user is not None
 
 
+def load_progress(student_id):
+    """
+    Load the user's learning progress from the progress.json file.
+
+    Args:
+        student_id (str): The ID of the student.
+
+    Returns:
+        dict: A dictionary containing progress data for each topic.
+    """
+    progress_file = 'data/progress.json'
+    try:
+        if os.path.exists(progress_file):
+            with open(progress_file, 'r') as f:
+                progress_data = json.load(f)
+            return progress_data.get(student_id, {})
+        return {}
+    except Exception as e:
+        st.error(f"Error loading progress data: {e}")
+        return {}
+
+
 def download_progress(progress, student_id):
     """
     Allow users to download their progress as a CSV file.
@@ -33,13 +49,14 @@ def download_progress(progress, student_id):
         progress (dict): The user's progress data.
         student_id (str): The ID of the student.
     """
+    import pandas as pd
     if progress:
         data = []
         for topic, details in progress.items():
             data.append({
                 "Topic": topic,
-                "Score": details.get('Score', 0),
-                "Total": details.get('Total', 0)
+                "Score": details.get('score', 0),
+                "Total": details.get('total', 0)
             })
         df = pd.DataFrame(data)
         csv = df.to_csv(index=False)
@@ -101,47 +118,6 @@ def add_custom_css():
     st.markdown(custom_css, unsafe_allow_html=True)
 
 
-def load_progress_from_db(db_service, username):
-    """
-    Load the user's learning progress from the database.
-
-    Args:
-        db_service (DatabaseService): The database service instance.
-        username (str): The username of the student.
-
-    Returns:
-        dict: A dictionary containing progress data for each topic.
-    """
-    try:
-        # Fetch results from the database
-        results = db_service.fetch_results(username)
-        if not results:
-            return {}
-
-        # Convert results to DataFrame
-        df = pd.DataFrame(results, columns=[
-            'Topic',
-            'Question',
-            'User Answer',
-            'Correct Answer',
-            'Correct',
-            'Explanation'
-        ])
-
-        # Group by Topic to calculate Score and Total
-        progress_df = df.groupby('Topic').agg(
-            Score=('Correct', 'sum'),
-            Total=('Correct', 'count')
-        ).reset_index()
-
-        # Convert to dictionary
-        progress = progress_df.set_index('Topic').to_dict(orient='index')
-        return progress
-    except Exception as e:
-        st.error(f"Error loading progress data: {e}")
-        return {}
-
-
 def main():
     """
     The main function to render the profile page.
@@ -163,7 +139,6 @@ def main():
     # Fetch additional user details
     user_profile = get_user_profile(access_token)
     username = user_profile.get('userPrincipalName', 'User')
-
     with st.sidebar:
         # Only show pages if the user is logged in
         if st.session_state.get("user"):
@@ -181,18 +156,13 @@ def main():
     user_in_db = db_service.get_user_by_username(username)
 
     if user_in_db:
-        # Access the tuple elements by index
-        # users table: (id, username, display_name, student_id, enrollment_date)
-        enrollment_date = user_in_db[4] if len(user_in_db) > 4 else 'N/A'
-        student_id = user_in_db[3] if len(user_in_db) > 3 else 'N/A'
+        enrollment_date = user_in_db[4]
+        student_id = user_in_db[1]
     else:
         enrollment_date = 'N/A'
         student_id = 'N/A'
 
-    # Store student_id in session_state for consistency
-    st.session_state['student_id'] = student_id
-
-    st.write(f"Welcome, {user_profile.get('displayName', 'User')}!")
+    st.write(f"Welcome, {username}!")
 
     # Layout: Use columns for better organization
     col1, col2 = st.columns([1, 2])
@@ -203,6 +173,7 @@ def main():
 
         if photo_data:
             # Display the photo from binary data
+            from io import BytesIO
             image = Image.open(BytesIO(photo_data))
             st.image(image, width=150, caption="Profile Picture")
         else:
@@ -227,14 +198,15 @@ def main():
     # Progress Section
     st.header("Your Learning Progress 📈")
 
-    # Load user progress from the database
-    progress = load_progress_from_db(db_service, username)
+    # Load user progress
+    student_id = st.session_state.get('student_id', '')
+    progress = load_progress(student_id)
 
     if progress:
         # Extract data for visualization
         topics = list(progress.keys())
-        scores = [details['Score'] for details in progress.values()]
-        total_questions = [details['Total'] for details in progress.values()]
+        scores = [progress[topic]['score'] for topic in topics]
+        total_questions = [progress[topic]['total'] for topic in topics]
 
         # Bar Chart: Correct Answers per Topic
         fig = px.bar(
@@ -282,9 +254,9 @@ def main():
     achievements = []
     if progress:
         for topic, data in progress.items():
-            if data['Score'] == data['Total']:
+            if data['score'] == data['total']:
                 achievements.append(f"**Mastered {topic}** 🎉")
-            elif data['Score'] >= data['Total'] * 0.7:
+            elif data['score'] >= data['total'] * 0.7:
                 achievements.append(f"**Proficient in {topic}** 👍")
             else:
                 achievements.append(f"**Improving in {topic}** 🔄")
@@ -317,9 +289,6 @@ def main():
     st.markdown("---")
     st.markdown(
         "© 2024 PolyU SPEED Python Learning Chatbot. All rights reserved.")
-
-    # Close the database connection
-    db_service.close()
 
 
 if __name__ == "__main__":

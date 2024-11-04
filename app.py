@@ -10,6 +10,8 @@ import uuid
 import requests
 import datetime as datetime
 import logging
+import os
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -76,12 +78,48 @@ def get_user_photo(token):
         return None
 
 
+def generate_sidebar_links():
+    pages_dir = os.path.join(os.path.dirname(__file__), 'pages')
+    pages = [f for f in os.listdir(pages_dir) if f.endswith('.py')]
+
+    # Optionally, define a mapping for icons or labels
+    icon_mapping = {
+        'app.py': '🏠',
+        'Profile.py': '👤',
+        'gpa.py': '🎓',
+        'learning_progress.py': '📈',
+        'achievements.py': '🏅',
+        'management_gpa.py': '📊',
+        'achievement_list.py': '📜',
+        'chat.py': '💬',
+        'Student_Performance.py': '📊',
+        # Add more mappings as needed
+    }
+    st.sidebar.page_link('app.py', label='Home', icon='🏠')
+    for page in pages:
+        page_path = f'pages/{page}'
+        page_name = page.replace('.py', '')
+        label = page_name.replace('_', ' ').title()
+        icon = icon_mapping.get(page, '📄')  # Default icon
+        st.sidebar.page_link(page_path, label=label, icon=icon)
+
+
 def main():
     st.set_page_config(page_title=Config.APP_NAME)
     st.title(Config.APP_NAME)
 
     if 'user' not in st.session_state:
         st.session_state.user = None
+
+    with st.sidebar:
+        # Only show pages if the user is logged in
+        if st.session_state.get("user"):
+            generate_sidebar_links()
+            st.markdown('---')
+        else:
+            st.write("Please log in to access the application.")
+            st.markdown(
+                f"[Click here to log in with Azure AD]({get_sign_in_url()})")
 
     # Handle authentication
     query_params = st.query_params
@@ -115,13 +153,18 @@ def main():
 
         # Display user information
         user_profile = get_user_profile(st.session_state.access_token)
+
         username = user_profile.get('displayName', 'User')
+
         st.sidebar.title(f"Welcome, {username}")
+
         login_time = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
         st.sidebar.write(f"Login time: {login_time}")
+
         db_service.insert_login_time(username, login_time)
 
-        # how many login time in users
+        # Get login count
         login_count = db_service.get_login_count(username)
         st.sidebar.write(f"Login count: {login_count}")
 
@@ -139,7 +182,6 @@ def main():
             st.session_state.clear()
             st.rerun()
 
-        # Render the main UI
         ui_service.render()
 
     else:
