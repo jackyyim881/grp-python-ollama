@@ -8,3 +8,4 @@ pyarrow
 numpy
 streamlit
 python-dotenv
+langchain-ollama
