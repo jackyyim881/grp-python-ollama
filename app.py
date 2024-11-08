@@ -37,11 +37,29 @@ def build_msal_app(cache=None):
     )
 
 
+# def get_sign_in_url():
+#     return build_msal_app().get_authorization_request_url(
+#         scopes=Config.SCOPE,
+#         state=str(uuid.uuid4()),
+#         redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
+#     )
+
+
+# def get_token_from_code(code):
+#     cache = load_cache()
+#     result = build_msal_app(cache=cache).acquire_token_by_authorization_code(
+#         code,
+#         scopes=Config.SCOPE,
+#         redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
+#     )
+#     save_cache(cache)
+#     return result
+
 def get_sign_in_url():
     return build_msal_app().get_authorization_request_url(
         scopes=Config.SCOPE,
         state=str(uuid.uuid4()),
-        redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
+        redirect_uri=Config.REDIRECT_URI  # 使用 Config.REDIRECT_URI
     )
 
 
@@ -50,7 +68,7 @@ def get_token_from_code(code):
     result = build_msal_app(cache=cache).acquire_token_by_authorization_code(
         code,
         scopes=Config.SCOPE,
-        redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
+        redirect_uri=Config.REDIRECT_URI  # 使用 Config.REDIRECT_URI
     )
     save_cache(cache)
     return result
