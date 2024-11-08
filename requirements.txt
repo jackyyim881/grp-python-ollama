@@ -9,3 +9,4 @@ numpy
 streamlit
 python-dotenv
 langchain-ollama
+streamlit-elements
