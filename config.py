@@ -35,6 +35,7 @@ class Config:
 
     # Questions File
     QUESTIONS_FILEPATH = os.getenv('QUESTIONS_FILEPATH', 'questions.json')
+
    # Azure AD Settings
     CLIENT_ID = os.getenv('CLIENT_ID')
     CLIENT_SECRET = os.getenv('CLIENT_SECRET')
@@ -43,12 +44,17 @@ class Config:
     REDIRECT_PATH = os.getenv('REDIRECT_PATH', '/redirect')
     SCOPE = [os.getenv('SCOPE', 'User.Read')]
 
-    AZURE_FACE_KEY = os.getenv('AZURE_FACE_KEY')
-    AZURE_FACE_ENDPOINT = os.getenv('AZURE_FACE_ENDPOINT')
     APP_PATH = '/app'
     BASE_URL = os.getenv('BASE_URL', 'http://localhost:8501')
 
-    REDIRECT_URI = os.getenv('REDIRECT_URI', 'http://localhost:8501')
+    if ENV == 'production':
+        BASE_URL = os.getenv('BASE_URL', 'https://yourapp.streamlit.app')
+        REDIRECT_URI = os.getenv(
+            'REDIRECT_URI', 'https://yourapp.streamlit.app/redirect')
+    else:
+        BASE_URL = os.getenv('BASE_URL', 'http://localhost:8501')
+        REDIRECT_URI = os.getenv(
+            'REDIRECT_URI', 'http://localhost:8501/redirect')
 
 
 # Validate required configurations
@@ -56,7 +62,8 @@ required_configs = [
     'SECRET_KEY', 'DATABASE_PATH',
     'OLLAMA_BASE_URL', 'OLLAMA_MODEL',
     'QUESTIONS_FILEPATH', 'CLIENT_ID',
-    'CLIENT_SECRET', 'TENANT_ID'
+    'CLIENT_SECRET', 'TENANT_ID',
+    'AUTHORITY', 'REDIRECT_URI', 'SCOPE'
 ]
 
 

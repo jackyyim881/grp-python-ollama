@@ -11,3 +11,4 @@ python-dotenv
 langchain-ollama
 streamlit-elements
 msal
+replicate
