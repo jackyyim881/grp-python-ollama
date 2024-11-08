@@ -6,3 +6,5 @@ pymupdf
 lancedb
 pyarrow
 numpy
+streamlit
+python-dotenv
