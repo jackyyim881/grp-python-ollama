@@ -119,7 +119,6 @@ def main():
                 for sender, message in st.session_state.chat_history:
                     st.markdown(f"**{sender}:** {message}")
                 # Clear input
-                st.session_state.chat_input = ""
             else:
                 st.warning("Please enter a message.")
         else:

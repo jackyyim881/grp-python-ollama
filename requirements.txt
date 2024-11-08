@@ -13,3 +13,4 @@ streamlit-elements
 msal
 replicate
 plotly-express
+openai 

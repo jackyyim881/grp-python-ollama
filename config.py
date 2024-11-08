@@ -1,6 +1,7 @@
 # config.py
 import os
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Determine the environment (development by default)
 ENV = os.getenv('ENV', 'development')
@@ -51,10 +52,13 @@ class Config:
         BASE_URL = os.getenv('BASE_URL', 'https://yourapp.streamlit.app')
         REDIRECT_URI = os.getenv(
             'REDIRECT_URI', 'https://yourapp.streamlit.app/redirect')
+        XAI_API_KEY = os.getenv('XAI_API_KEY')
     else:
         BASE_URL = os.getenv('BASE_URL', 'http://localhost:8501')
         REDIRECT_URI = os.getenv(
             'REDIRECT_URI', 'http://localhost:8501/redirect')
+
+    XAI_API_KEY = os.getenv('XAI_API_KEY')
 
 
 # Validate required configurations
@@ -63,7 +67,7 @@ required_configs = [
     'OLLAMA_BASE_URL', 'OLLAMA_MODEL',
     'QUESTIONS_FILEPATH', 'CLIENT_ID',
     'CLIENT_SECRET', 'TENANT_ID',
-    'AUTHORITY', 'REDIRECT_URI', 'SCOPE'
+    'AUTHORITY', 'REDIRECT_URI', 'SCOPE', 'XAI_API_KEY'
 ]
 
 
