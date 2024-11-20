@@ -218,7 +218,7 @@ class DatabaseService:
             logger.info("Inserted login time for user.")
         except sqlite3.Error as e:
             logger.error(f"Database insertion error: {e}")
-            print(f"Database insertion error: {e}")  # Debugging
+            print(f"Database insertion error: {e}")
 
     def get_login_count(self, username):
         try:

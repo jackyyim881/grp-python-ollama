@@ -30,7 +30,6 @@ def main():
                 # Get user profile
                 user_profile = get_user_profile(result['access_token'])
 
-                st.write(user_profile)
                 username = user_profile.get('userPrincipalName', 'N/A')
                 student_id = user_profile.get('id', 'N/A')
                 display_name = user_profile.get('displayName', 'N/A')
@@ -57,11 +56,8 @@ def main():
                 st.title(f"Welcome {username}! 🎉")
 
                 st.success("Login successful.")
-                st.markdown(
-                    f'Go to app')
 
-                st.markdown(
-                    "[Click here to return to the main application](/)")
+                st.page_link('app.py', label='Home', icon='🏠')
 
             else:
                 error_description = result.get(

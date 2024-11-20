@@ -1,4 +1,4 @@
-# pages/achievements.py
+# achievements.py
 
 import streamlit as st
 import os
@@ -16,20 +16,21 @@ def add_custom_css():
         /* Custom CSS for the achievements page */
         .achievement-card {
             background-color: #ffffff;
-            padding: 20px;
-            border-radius: 15px;
+            padding: 10px; /* Reduced padding */
+            border-radius: 10px; /* Slightly smaller radius */
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Smaller shadow */
+            margin-bottom: 10px; /* Reduced margin */
+            transition: transform 0.2s, box-shadow 0.2s; /* Faster transition */
+            width: 200px; /* Fixed width */
         }
         .achievement-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transform: translateY(-5px); /* Smaller translate */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Slightly larger shadow on hover */
         }
         .achievement-icon {
-            font-size: 60px;
-            margin-bottom: 15px;
+            font-size: 40px; /* Reduced icon size */
+            margin-bottom: 10px; /* Reduced margin */
         }
         .locked {
             opacity: 0.6;
@@ -37,7 +38,7 @@ def add_custom_css():
         .metric-container {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 30px;
+            margin-bottom: 20px; /* Reduced margin */
         }
         .metric {
             text-align: center;
@@ -50,12 +51,16 @@ def display_achievement(achievement, is_unlocked):
     icon = '🏆' if is_unlocked else '🔒'
     color = '#FFD700' if is_unlocked else '#A9A9A9'
     background = '#fefae0' if is_unlocked else '#ececec'
+    achieved_at = f"<p><strong>Achieved At:</strong> {
+        achievement['achieved_at']}</p>" if is_unlocked else ""
+
     st.markdown(f"""
         <div class="achievement-card" style="background-color: {background};">
             <div class="achievement-icon" style="color: {color};">{icon}</div>
-            <h3>{achievement['name']}</h3>
+            <h4>{achievement['name']}</h4> <!-- Reduced heading size -->
             <p>{achievement['description']}</p>
-            <p><strong>Target:</strong>{achievement['target']}</p>
+            <p><strong>Target:</strong> {achievement['target']}</p>
+            {achieved_at}
         </div>
     """, unsafe_allow_html=True)
 
@@ -224,7 +229,8 @@ def main():
                 display_achievement({
                     'name': achievement[1],
                     'description': achievement[2],
-                    'target': achievement[3]  # 假設成就數據包含目標值
+                    'target': achievement[3],
+                    'achieved_at': achievement[4] if is_unlocked else ""
                 }, is_unlocked)
 
     # Show progress stats with progress bars
@@ -257,7 +263,7 @@ def main():
             'Master of Python': {
                 'current': performance['total_answered'],
                 'target': 20,
-                'description': 'Answer at least 20 questions with an accuracy of 90% and no struggled topics'
+                'description': 'Answer at least 20 questions with 90% accuracy and no struggled topics'
             }
         }
 
@@ -268,7 +274,7 @@ def main():
 
             if achievement_name == 'Master of Python':
                 # Special condition for Master of Python
-                if performance['total_correct'] / performance['total_answered'] < 0.9 or len(performance['topics_struggled']) > 0:
+                if performance['total_answered'] == 0 or performance['total_correct'] / performance['total_answered'] < 0.9 or len(performance['topics_struggled']) > 0:
                     target = 0  # Indicate not achievable
                     progress = 0
                 else:

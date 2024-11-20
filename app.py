@@ -37,24 +37,6 @@ def build_msal_app(cache=None):
     )
 
 
-# def get_sign_in_url():
-#     return build_msal_app().get_authorization_request_url(
-#         scopes=Config.SCOPE,
-#         state=str(uuid.uuid4()),
-#         redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
-#     )
-
-
-# def get_token_from_code(code):
-#     cache = load_cache()
-#     result = build_msal_app(cache=cache).acquire_token_by_authorization_code(
-#         code,
-#         scopes=Config.SCOPE,
-#         redirect_uri=f'http://localhost:8501{Config.REDIRECT_PATH}'
-#     )
-#     save_cache(cache)
-#     return result
-
 def get_sign_in_url():
     return build_msal_app().get_authorization_request_url(
         scopes=Config.SCOPE,
@@ -108,9 +90,10 @@ def generate_sidebar_links():
         'learning_progress.py': '📈',
         'achievements.py': '🏅',
         'management_gpa.py': '📊',
-        'achievement_list.py': '📜',
+        'achievement_management.py': '📜',
         'chat.py': '💬',
         'Student_Performance.py': '📊',
+        'game.py': '🎮',
         # Add more mappings as needed
     }
     st.sidebar.page_link('app.py', label='Home', icon='🏠')
@@ -122,12 +105,33 @@ def generate_sidebar_links():
         st.sidebar.page_link(page_path, label=label, icon=icon)
 
 
+def display_login():
+    azure_logo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Microsoft_Azure.svg/225px-Microsoft_Azure.svg.png"
+    sign_in_url = get_sign_in_url()
+
+    # Markdown to display the Azure logo as a clickable link
+    login_markdown = f"""
+    <a href="{sign_in_url}" target="_blank">
+        <img src="{azure_logo_url}" alt="Azure AD Logo" style="height:30px; vertical-align:middle;"/>
+        <span style="margin-left:10px; font-size:16px; vertical-align:middle;">Click here to log in with Azure AD</span>
+    </a>
+    """
+
+    # Render the HTML in Streamlit
+    st.markdown(login_markdown, unsafe_allow_html=True)
+
+
 def main():
+    """Main function to run the Streamlit app."""
+
     st.set_page_config(page_title=Config.APP_NAME)
     st.title(Config.APP_NAME)
 
     if 'user' not in st.session_state:
         st.session_state.user = None
+
+    if 'login_recorded' not in st.session_state:
+        st.session_state.login_recorded = False
 
     with st.sidebar:
         # Only show pages if the user is logged in
@@ -136,8 +140,7 @@ def main():
             st.markdown('---')
         else:
             st.write("Please log in to access the application.")
-            st.markdown(
-                f"[Click here to log in with Azure AD]({get_sign_in_url()})")
+            display_login()
 
     # Handle authentication
     query_params = st.query_params
@@ -147,7 +150,14 @@ def main():
         result = get_token_from_code(code)
         if 'access_token' in result:
             # Successful login
+            user_profile = get_user_profile(result['access_token'])
+            st.session_state.user = user_profile  # Store user profile in session_state
+
+            # Store access token
+            st.session_state.access_token = result['access_token']
+
             db_service = DatabaseService()
+            st.session_state.login_recorded = False  # Reset login_recorded flag
 
             st.query_params()
             st.rerun()
@@ -204,8 +214,7 @@ def main():
 
     else:
         # User is not logged in, show login button
-        sign_in_url = get_sign_in_url()
-        st.markdown(f"[Click here to log in with Azure AD]({sign_in_url})")
+        display_login()
 
 
 if __name__ == "__main__":

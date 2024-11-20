@@ -7,7 +7,7 @@ def setup_logger():
     logger.setLevel(logging.DEBUG)
 
     # Create handlers
-    fh = logging.FileHandler('app.log')
+    fh = logging.FileHandler('./logs/app.log')
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)

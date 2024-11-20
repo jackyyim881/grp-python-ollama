@@ -45,22 +45,22 @@ class LLMService:
     def get_encouragement(self, performance_data):
         try:
             prompt = f"""
-You are a supportive Python programming tutor.
+    You are a supportive Python programming tutor.
 
-Based on the student's performance data:
-- Total Questions Answered: {performance_data['total_answered']}
-- Total Correct Answers: {performance_data['total_correct']}
-- Topics Attempted: {', '.join(performance_data['topics_attempted'])}
-- Topics Struggled With: {', '.join(performance_data['topics_struggled'])}
+    Based on the student's performance data:
+    - Total Questions Answered: {performance_data['total_answered']}
+    - Total Correct Answers: {performance_data['total_correct']}
+    - Topics Attempted: {', '.join(performance_data['topics_attempted'])}
+    - Topics Struggled With: {', '.join(performance_data['topics_struggled'])}
 
-Provide an encouraging message to the student that acknowledges their efforts, highlights their strengths, and offers advice on how to improve on the topics they are struggling with. Please use more emojis in your response to make it engaging and motivating. 😊🎉👍
-"""
+    Provide a brief and encouraging message to the student that acknowledges their efforts, highlights their strengths, and offers advice on how to improve on the topics they are struggling with. Keep the response concise (2-3 sentences) and use a few emojis to make it engaging and motivating. 😊🎉👍
+    """
             encouragement = self.invoke(prompt)
             logger.info("Fetched encouragement from LLM.")
             return encouragement.strip()
         except Exception as e:
             logger.error(f"Error fetching encouragement: {e}")
-            return "Keep up the good work!"
+            return "Keep up the good work! 👍"
 
     def chat(self, user_input):
         self.conversation_history.append(f"User: {user_input}")
@@ -137,3 +137,32 @@ Assistant:
         except Exception as e:
             logger.error(f"Error fetching code review feedback: {e}")
             return "I'm sorry, I couldn't provide feedback at this time."
+
+    def evaluate_code(self, user_code, correct_answer):
+        """
+        Evaluate the user's code by comparing it with the correct answer using the LLM.
+        Returns a tuple (is_correct: bool, feedback: str)
+        """
+        try:
+            prompt = f"""
+You are an expert Python programming tutor. Evaluate the following user-submitted code and determine if it correctly solves the given problem.
+
+**Problem:**
+{user_code}
+
+**Expected Answer:**
+{correct_answer}
+
+**Provide your evaluation below:**
+"""
+            evaluation = self.invoke(prompt)
+
+            # Simple heuristic to determine correctness based on LLM's response
+            is_correct = "correct" in evaluation.lower()
+            feedback = evaluation
+
+            logger.info("Fetched code evaluation from LLM.")
+            return is_correct, feedback.strip()
+        except Exception as e:
+            logger.error(f"Error evaluating code: {e}")
+            return False, "I'm sorry, I couldn't evaluate your code at this time."
