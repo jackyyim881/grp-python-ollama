@@ -96,6 +96,7 @@ def generate_sidebar_links():
         'game.py': '🎮',
         # Add more mappings as needed
     }
+
     st.sidebar.page_link('app.py', label='Home', icon='🏠')
     for page in pages:
         page_path = f'pages/{page}'
