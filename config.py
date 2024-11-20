@@ -27,7 +27,8 @@ class Config:
     OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2')
 
     # Questions File
-    QUESTIONS_FILEPATH = os.getenv('QUESTIONS_FILEPATH', 'questions.json')
+    QUESTIONS_FILEPATH = os.getenv(
+        'QUESTIONS_FILEPATH', './data/questions.json')
 
     # Azure AD Settings
     CLIENT_ID = os.getenv('CLIENT_ID')
