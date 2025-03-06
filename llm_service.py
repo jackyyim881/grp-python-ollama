@@ -1,8 +1,15 @@
 # llm_service.py
+from pydantic import BaseModel, Field, ConfigDict
 import os
 from openai import OpenAI
 from config import Config
 from logger import setup_logger
+import re
+import streamlit as st
+from langchain_xai import ChatXAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.messages import AIMessage
 
 logger = setup_logger()
 
@@ -138,31 +145,172 @@ Assistant:
             logger.error(f"Error fetching code review feedback: {e}")
             return "I'm sorry, I couldn't provide feedback at this time."
 
-    def evaluate_code(self, user_code, correct_answer):
-        """
-        Evaluate the user's code by comparing it with the correct answer using the LLM.
-        Returns a tuple (is_correct: bool, feedback: str)
-        """
-        try:
-            prompt = f"""
-You are an expert Python programming tutor. Evaluate the following user-submitted code and determine if it correctly solves the given problem.
 
-**Problem:**
-{user_code}
+# class CodeEvaluation(BaseModel):
+#     correctness: float = Field(..., ge=0, le=10)  # Score out of 10
+#     efficiency: float = Field(..., ge=0, le=10)   # Score out of 10
+#     code_quality: float = Field(..., ge=0, le=10)  # Score out of 10
+#     overall_score: float = Field(..., ge=0, le=30)  # Total score out of 30
+#     feedback: str                                  # Detailed constructive feedback
+class CodeEvaluation(BaseModel):
+    correctness: int
+    efficiency: int
+    code_quality: int
+    overall_score: int
+    feedback: str
 
-**Expected Answer:**
-{correct_answer}
 
-**Provide your evaluation below:**
-"""
-            evaluation = self.invoke(prompt)
+class TextEvaluation(BaseModel):
+    correctness: int
+    feedback: str
 
-            # Simple heuristic to determine correctness based on LLM's response
-            is_correct = "correct" in evaluation.lower()
-            feedback = evaluation
 
-            logger.info("Fetched code evaluation from LLM.")
-            return is_correct, feedback.strip()
-        except Exception as e:
-            logger.error(f"Error evaluating code: {e}")
-            return False, "I'm sorry, I couldn't evaluate your code at this time."
+def evaluate_with_chatxai(question, user_answer, correct_answer):
+    """
+    Function to evaluate user fill-in-the-blank answer using ChatXAI.
+
+    Args:
+    - question: The fill-in-the-blank question.
+    - user_answer: The user's provided answer for the blank.
+    - correct_answer: The correct answer to the blank.
+
+    Returns:
+    - correctness: A score (0-10) indicating how correct the user's answer is.
+    - feedback: Feedback from the AI model regarding the user's answer.
+    """
+    try:
+        # Initialize the ChatXAI model
+        chat = ChatXAI(model="grok-beta", xai_api_key=Config.XAI_API_KEY)
+
+        # Define the prompt template for answer evaluation
+        prompt_template = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert at evaluating fill-in-the-blank questions. Respond with ONLY valid JSON."),
+            ("user", """
+            Evaluate this fill-in-the-blank question:
+
+            QUESTION: {question}
+
+            USER ANSWER:
+            {user_answer}
+
+            CORRECT ANSWER:
+            {correct_answer}
+
+            RESPOND WITH THIS EXACT JSON FORMAT:
+            {{
+                "correctness": <number 0-10>, 
+                "feedback": "<feedback string>"
+            }}
+            NO OTHER TEXT OR FORMATTING""")
+        ])
+
+        # Format the prompt with the question, user's answer, and the correct answer
+        prompt = prompt_template.format_messages(
+            question=question,
+            user_answer=user_answer,
+            correct_answer=correct_answer
+        )
+
+        # Get the response from the AI model
+        response = chat.invoke(prompt)
+        logger.info(response)
+
+        # Clean and parse the response to extract the JSON result
+        content = response.content.strip()
+
+        # Use regex to extract the JSON object from the response
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in response")
+
+        json_str = json_match.group()
+
+        # Clean up the JSON string (remove unwanted characters and fix formatting)
+        json_str = re.sub(r'[\n\r\t]', '', json_str)
+        json_str = re.sub(r',\s*}', '}', json_str)
+
+        # Parse the cleaned JSON string into the TextEvaluation object
+        evaluation = TextEvaluation.parse_raw(json_str)
+
+        # Ensure the correctness score is within the valid range (0 to 10)
+        if not (0 <= evaluation.correctness <= 10):
+            raise ValueError("Invalid correctness score")
+
+        return evaluation.correctness, evaluation.feedback
+
+    except Exception as e:
+        logger.error(f"Error during answer evaluation: {str(e)}")
+        return 0, "Unable to evaluate answer. Please try again."
+
+
+def evaluate_code(problem, user_code, correct_answer):
+    """Evaluate user code and provide feedback."""
+    try:
+        # Initialize the ChatXAI model
+        chat = ChatXAI(model="grok-beta", xai_api_key=Config.XAI_API_KEY)
+
+        # Define the prompt template with strict JSON formatting
+        prompt_template = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert code reviewer. Respond with ONLY valid JSON."),
+            ("user", """
+            Evaluate this code:
+            
+            PROBLEM: {problem}
+            
+            USER CODE:
+            {user_code}
+            
+            CORRECT ANSWER:
+            {correct_answer}
+            
+            RESPOND WITH THIS EXACT JSON FORMAT:
+            {{
+                "correctness": <number 0-10>,
+                "efficiency": <number 0-10>,
+                "code_quality": <number 0-10>, 
+                "overall_score": <number 0-10>,
+                "feedback": "<feedback string>"
+            }}
+            NO OTHER TEXT OR FORMATTING""")
+        ])
+
+        # Format prompt
+        prompt = prompt_template.format_messages(
+            problem=problem,
+            user_code=user_code,
+            correct_answer=correct_answer
+        )
+
+        # Get response
+        response = chat.invoke(prompt)
+        logger.info(response)
+        # Clean response and extract JSON using simpler regex
+        content = response.content.strip()
+        # Find anything between first { and last }
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in response")
+
+        json_str = json_match.group()
+
+        # Additional JSON cleaning
+        json_str = re.sub(r'[\n\r\t]', '', json_str)
+        json_str = re.sub(r',\s*}', '}', json_str)
+
+        # Parse JSON
+        evaluation = CodeEvaluation.parse_raw(json_str)
+
+        # Validate scores are within bounds
+        if not all(0 <= score <= 10 for score in [
+            evaluation.correctness,
+            evaluation.efficiency,
+            evaluation.code_quality,
+            evaluation.overall_score
+        ]):
+            raise ValueError("Invalid score values")
+
+        return evaluation.overall_score, evaluation.feedback
+
+    except Exception as e:
+        logger.error(f"Error during code evaluation: {str(e)}")
+        return 0, "Unable to evaluate code. Please try again."

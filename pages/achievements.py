@@ -8,6 +8,53 @@ from database import DatabaseService
 from PIL import Image
 from app import get_sign_in_url, generate_sidebar_links
 import plotly.express as px
+import logging
+import sqlite3
+
+logger = logging.getLogger(__name__)
+
+
+def insert_achievement(name, description, target, achieved_at=None):
+    conn = sqlite3.connect('./data/assessment_records.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            target INTEGER,
+            achieved_at TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        SELECT id FROM achievements WHERE name = ?
+    ''', (name,))
+    if cursor.fetchone():
+        logger.info(f"Achievement '{
+                    name}' already exists. Skipping insertion.")
+    else:
+        cursor.execute('''
+            INSERT INTO achievements (name, description, target, achieved_at)
+            VALUES (?, ?, ?, ?)
+        ''', (name, description, target, achieved_at))
+        logger.info(f"Inserted achievement: {name}")
+
+    conn.commit()
+    conn.close()
+
+
+time = datetime.utcnow().isoformat()
+
+insert_achievement('First Steps', 'Answer at least 1 question',
+                   1, time)
+insert_achievement(
+    'Quick Learner', 'Answer at least 5 questions with an accuracy of 60%', 5, time)
+insert_achievement(
+    'Quiz Master', 'Answer at least 10 questions correctly', 10, time)
+insert_achievement(
+    'Topic Explorer', 'Attempt at least 3 different topics', 3, time)
 
 
 def add_custom_css():
@@ -212,87 +259,48 @@ def main():
 
     # Display achievement cards
     user_achievements = db_service.fetch_user_achievements(username)
-    all_achievements = db_service.fetch_all_achievements()
+    achievements = db_service.fetch_all_achievements()
 
     # Create a set of unlocked achievement names for quick lookup
     unlocked_achievements = set(ach[0] for ach in user_achievements)
 
-    # Display achievements in a grid
-    cols_per_row = 3
-    achievements_rows = [all_achievements[i:i+cols_per_row]
-                         for i in range(0, len(all_achievements), cols_per_row)]
-    for row_achievements in achievements_rows:
-        cols = st.columns(cols_per_row)
-        for idx, achievement in enumerate(row_achievements):
-            with cols[idx]:
-                is_unlocked = achievement[1] in unlocked_achievements
-                display_achievement({
-                    'name': achievement[1],
-                    'description': achievement[2],
-                    'target': achievement[3],
-                    'achieved_at': achievement[4] if is_unlocked else ""
-                }, is_unlocked)
+    # Display achievements
+    st.markdown("---")
+    st.subheader("🏆 Your Achievements")
+    for idx, achievement in enumerate(achievements):
+
+        with st.expander(f"{achievement[1]}"):
+            is_unlocked = achievement[1] in unlocked_achievements
+            display_achievement({
+                'name': achievement[0],
+                'description': achievement[1],
+                'target': achievement[2],
+                'achieved_at': achievement[3]
+            }, is_unlocked)
+
+        # with cols[idx]:
+        #     for achievement in achievements:
+
+        #         is_unlocked = achievement[1] in unlocked_achievements
+        #         display_achievement({
+        #             'name': achievement[0],
+        #             'description': achievement[1],
+        #             'target': achievement[2],
+        #             'achieved_at': achievement[3]
+        #         }, is_unlocked)  # Display the achievement card
 
     # Show progress stats with progress bars
     if performance:
         st.markdown("---")
         st.subheader("📊 Your Progress")
-
-        # Define achievements and their targets based on total_answered
-        achievements_progress = {
-            'First Steps': {
-                'current': performance['total_answered'],
-                'target': 1,
-                'description': 'Answer at least 1 question'
-            },
-            'Quick Learner': {
-                'current': performance['total_answered'],
-                'target': 5,
-                'description': 'Answer at least 5 questions with an accuracy of 60%'
-            },
-            'Quiz Master': {
-                'current': performance['total_correct'],
-                'target': 10,
-                'description': 'Answer at least 10 questions correctly'
-            },
-            'Topic Explorer': {
-                'current': len(performance['topics_attempted']),
-                'target': 3,
-                'description': 'Attempt at least 3 different topics'
-            },
-            'Master of Python': {
-                'current': performance['total_answered'],
-                'target': 20,
-                'description': 'Answer at least 20 questions with 90% accuracy and no struggled topics'
-            }
-        }
-
-        for achievement_name, data in achievements_progress.items():
-            target = data['target']
-            current = data['current']
-            description = data['description']
-
-            if achievement_name == 'Master of Python':
-                # Special condition for Master of Python
-                if performance['total_answered'] == 0 or performance['total_correct'] / performance['total_answered'] < 0.9 or len(performance['topics_struggled']) > 0:
-                    target = 0  # Indicate not achievable
-                    progress = 0
-                else:
-                    progress = calculate_progress(current, target)
-            elif achievement_name == 'Quick Learner':
-                # Include correct rate
-                accuracy = (performance['total_correct'] / performance['total_answered']
-                            ) * 100 if performance['total_answered'] > 0 else 0
-                if accuracy < 60:
-                    progress = calculate_progress(current, target)
-                else:
-                    progress = calculate_progress(current, target)
-            else:
-                progress = calculate_progress(current, target)
-
-            st.markdown(f"**{achievement_name}**: {description}")
-            st.progress(progress)
-            st.write(f"{current} / {target}")
+        for achievement in achievements:
+            target = achievement[3]
+            name = achievement[1]
+            description = achievement[2]
+            st.markdown(f"**{achievement[1]}**: {description}")
+            st.progress(calculate_progress(
+                performance['total_answered'], target))
+            st.write(f"{performance['total_answered']} / {target}")
             st.write("")
 
     # Show feedback form
@@ -327,3 +335,60 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # Define achievements and their targets based on total_answered
+    # achievements_progress = {
+    #     'First Steps': {
+    #         'current': performance['total_answered'],
+    #         'target': 1,
+    #         'description': 'Answer at least 1 question'
+    #     },
+    #     'Quick Learner': {
+    #         'current': performance['total_answered'],
+    #         'target': 5,
+    #         'description': 'Answer at least 5 questions with an accuracy of 60%'
+    #     },
+    #     'Quiz Master': {
+    #         'current': performance['total_correct'],
+    #         'target': 10,
+    #         'description': 'Answer at least 10 questions correctly'
+    #     },
+    #     'Topic Explorer': {
+    #         'current': len(performance['topics_attempted']),
+    #         'target': 3,
+    #         'description': 'Attempt at least 3 different topics'
+    #     },
+    #     'Master of Python': {
+    #         'current': performance['total_answered'],
+    #         'target': 20,
+    #         'description': 'Answer at least 20 questions with 90% accuracy and no struggled topics'
+    #     }
+    # }
+
+    # for achievement_name, data in achievements[0].items():
+    #     target = data['target']
+    #     current = data['current']
+    #     description = data['description']
+
+    #     if achievement_name == 'Master of Python':
+    #         # Special condition for Master of Python
+    #         if performance['total_answered'] == 0 or performance['total_correct'] / performance['total_answered'] < 0.9 or len(performance['topics_struggled']) > 0:
+    #             target = 0  # Indicate not achievable
+    #             progress = 0
+    #         else:
+    #             progress = calculate_progress(current, target)
+    #     elif achievement_name == 'Quick Learner':
+    #         # Include correct rate
+    #         accuracy = (performance['total_correct'] / performance['total_answered']
+    #                     ) * 100 if performance['total_answered'] > 0 else 0
+    #         if accuracy < 60:
+    #             progress = calculate_progress(current, target)
+    #         else:
+    #             progress = calculate_progress(current, target)
+    #     else:
+    #         progress = calculate_progress(current, target)
+
+    #     st.markdown(f"**{achievement_name}**: {description}")
+    #     st.progress(progress)
+    #     st.write(f"{current} / {target}")
+    #     st.write("")

@@ -1,9 +1,8 @@
 # pages/redirect.py
 
 import streamlit as st
-from app import get_token_from_code, get_user_profile, load_cache, save_cache, build_msal_app, get_sign_in_url
-from config import Config
-import streamlit.components.v1 as components
+from app import get_token_from_code, get_user_profile, load_cache, save_cache, get_sign_in_url
+
 from database import DatabaseService
 import datetime
 

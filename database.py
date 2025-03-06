@@ -33,9 +33,10 @@ class DatabaseService:
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS achievements (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
                     description TEXT,
-                    criteria TEXT
+                    target INTEGER,
+                    achieved_at TEXT
                 )
             ''')
             self.cursor.execute('''
@@ -74,27 +75,26 @@ class DatabaseService:
             logger.error(f"Error initializing tables: {e}")
             raise
 
-    def create_achievement(self, name, description, criteria):
+    def create_achievement(self, name, description, target):
         try:
             self.cursor.execute('''
-                    INSERT INTO achievements (name, description, criteria)
-                    VALUES (?, ?, ?)
-                ''', (name, description, criteria))
+                INSERT INTO achievements (name, description, target)
+                VALUES (?, ?, ?)
+            ''', (name, description, target))
             self.conn.commit()
             logger.info(f"Created achievement: {name}")
             return True
         except sqlite3.IntegrityError as e:
-            logger.error(f"Integrity Error creating achievement {name}: {e}")
+            logger.error(f"Integrity Error creating achievement '{name}': {e}")
             return False
         except sqlite3.Error as e:
-            logger.error(f"Database Error creating achievement {name}: {e}")
+            logger.error(f"Database Error creating achievement '{name}': {e}")
             return False
 
-    # Read all achievements
     def read_achievements(self):
         try:
             self.cursor.execute('''
-                SELECT id, name, description, criteria FROM achievements
+                SELECT id, name, description, target FROM achievements
             ''')
             achievements = self.cursor.fetchall()
             logger.info("Fetched all achievements.")
@@ -103,14 +103,13 @@ class DatabaseService:
             logger.error(f"Database fetch error for achievements: {e}")
             return []
 
-    # Update an existing achievement
-    def update_achievement(self, achievement_id, name, description, criteria):
+    def update_achievement(self, achievement_id, name, description, target):
         try:
             self.cursor.execute('''
                 UPDATE achievements
-                SET name = ?, description = ?, criteria = ?
+                SET name = ?, description = ?, target = ?
                 WHERE id = ?
-            ''', (name, description, criteria, achievement_id))
+            ''', (name, description, target, achievement_id))
             self.conn.commit()
             logger.info(f"Updated achievement ID {achievement_id}")
             return True
@@ -119,7 +118,6 @@ class DatabaseService:
                          achievement_id}: {e}")
             return False
 
-    # Delete an achievement
     def delete_achievement(self, achievement_id):
         try:
             self.cursor.execute('''
@@ -132,6 +130,32 @@ class DatabaseService:
             logger.error(f"Database deletion error for achievement ID {
                          achievement_id}: {e}")
             return False
+
+    def add_achievement(self, name, description, target):
+        try:
+            self.cursor.execute('''
+                INSERT INTO achievements (name, description, target)
+                VALUES (?, ?, ?)
+            ''', (name, description, target))
+            self.conn.commit()
+            logger.info(f"Added new achievement: {name}")
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Integrity Error adding achievement '{name}': {e}")
+        except sqlite3.Error as e:
+            logger.error(f"Database Error adding achievement '{name}': {e}")
+
+    def fetch_all_achievements(self):
+        try:
+            self.cursor.execute('''
+                SELECT id, name, description, target FROM achievements
+            ''')
+            achievements = self.cursor.fetchall()
+            logger.info("Fetched all achievements.")
+            return achievements
+        except sqlite3.Error as e:
+            logger.error(f"Database fetch error for achievements: {e}")
+            return []
+    # ----------------------------------------------
 
     def is_quiz_completed_after_midnight(self, username):
         try:
@@ -359,37 +383,12 @@ class DatabaseService:
             logger.error(f"Database fetch error: {e}")
             return {}
 
-    def add_achievement(self, name, description, criteria):
-        try:
-            self.cursor.execute('''
-                INSERT INTO achievements (name, description, criteria)
-                VALUES (?, ?, ?)
-            ''', (name, description, criteria))
-            self.conn.commit()
-            logger.info(f"Added new achievement: {name}")
-        except sqlite3.IntegrityError as e:
-            logger.error(f"Integrity Error adding achievement {name}: {e}")
-        except sqlite3.Error as e:
-            logger.error(f"Database Error adding achievement {name}: {e}")
-
-    def fetch_all_achievements(self):
-        try:
-            self.cursor.execute('''
-                SELECT id, name, description, criteria FROM achievements
-            ''')
-            achievements = self.cursor.fetchall()
-            logger.info("Fetched all achievements.")
-            return achievements
-        except sqlite3.Error as e:
-            logger.error(f"Database fetch error for achievements: {e}")
-            return []
-
     def assign_achievement_to_user(self, username, achievement_name, achieved_at):
         try:
             user = self.get_user_by_username(username)
             if not user:
                 logger.warning(
-                    f"User {username} not found. Cannot assign achievement.")
+                    f"User '{username}' not found. Cannot assign achievement.")
                 return
             user_id = user[0]
 
@@ -399,8 +398,8 @@ class DatabaseService:
             ''', (achievement_name,))
             achievement = self.cursor.fetchone()
             if not achievement:
-                logger.warning(
-                    f"Achievement {achievement_name} not found. Cannot assign.")
+                logger.warning(f"Achievement '{
+                               achievement_name}' not found. Cannot assign.")
                 return
             achievement_id = achievement[0]
 
@@ -409,8 +408,8 @@ class DatabaseService:
                 SELECT * FROM user_achievements WHERE user_id = ? AND achievement_id = ?
             ''', (user_id, achievement_id))
             if self.cursor.fetchone():
-                logger.info(f"User {username} already has achievement {
-                            achievement_name}.")
+                logger.info(f"User '{username}' already has achievement '{
+                            achievement_name}'.")
                 return
 
             # Assign achievement
@@ -419,11 +418,11 @@ class DatabaseService:
                 VALUES (?, ?, ?)
             ''', (user_id, achievement_id, achieved_at))
             self.conn.commit()
-            logger.info(f"Assigned achievement {achievement_name} to user {
-                        username} at {achieved_at}")
+            logger.info(f"Assigned achievement '{achievement_name}' to user '{
+                        username}' at {achieved_at}")
         except sqlite3.Error as e:
-            logger.error(f"Database error assigning achievement {
-                         achievement_name} to user {username}: {e}")
+            logger.error(f"Database error assigning achievement '{
+                         achievement_name}' to user '{username}': {e}")
 
     def fetch_user_achievements(self, username):
         try:

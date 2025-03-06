@@ -44,7 +44,7 @@ def display_chat_history():
 
 def clear_chat_history():
     st.session_state.chat_history = []
-    st.experimental_rerun()
+    st.rerun()
 
 
 def handle_user_input(llm_service, user_message):

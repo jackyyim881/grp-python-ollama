@@ -1,16 +1,20 @@
 # app.py
-import streamlit as st
-from config import Config
-from database import DatabaseService
-from question_loader import QuestionLoader
-from llm_service import LLMService
-from ui import UIService
-import msal
-import uuid
-import requests
-import datetime as datetime
-import logging
+from yaml.loader import SafeLoader
+import yaml
 import os
+import logging
+import datetime as datetime
+import requests
+import uuid
+import msal
+from ui import UIService
+from llm_service import LLMService
+from question_loader import QuestionLoader
+from database import DatabaseService
+from config import Config
+import streamlit as st
+
+st.set_page_config(page_title=Config.APP_NAME)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -94,6 +98,7 @@ def generate_sidebar_links():
         'chat.py': '💬',
         'Student_Performance.py': '📊',
         'game.py': '🎮',
+        'grade.py': '📝',
         # Add more mappings as needed
     }
 
@@ -125,7 +130,6 @@ def display_login():
 def main():
     """Main function to run the Streamlit app."""
 
-    st.set_page_config(page_title=Config.APP_NAME)
     st.title(Config.APP_NAME)
 
     if 'user' not in st.session_state:

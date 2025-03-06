@@ -1,0 +1,127 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "type": "multiple_choice",
+      "question": "What is the time complexity of accessing an element in a hash table?",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n^2)"],
+      "correct_answer": "O(1)",
+      "explanation": "Hash tables provide average constant time complexity for accessing elements, making it O(1)."
+    },
+    {
+      "id": 2,
+      "type": "multiple_choice",
+      "question": "Which of the following is an example of polymorphism in object-oriented programming?",
+      "options": [
+        "Method overloading",
+        "Method overriding",
+        "Both of the above",
+        "None of the above"
+      ],
+      "correct_answer": "Both of the above",
+      "explanation": "Polymorphism allows methods to behave differently depending on the object. Both overloading and overriding are examples of polymorphism."
+    },
+    {
+      "id": 3,
+      "type": "true_false",
+      "question": "In Python, lists are immutable data structures.",
+      "correct_answer": "False",
+      "explanation": "Python lists are mutable, meaning their elements can be modified after the list is created."
+    },
+    {
+      "id": 4,
+      "type": "multiple_choice",
+      "question": "Which algorithm is generally the fastest for sorting an array of integers?",
+      "options": [
+        "Quick Sort",
+        "Bubble Sort",
+        "Selection Sort",
+        "Insertion Sort"
+      ],
+      "correct_answer": "Quick Sort",
+      "explanation": "Quick Sort is an efficient, divide-and-conquer sorting algorithm with an average time complexity of O(n log n)."
+    },
+    {
+      "id": 5,
+      "type": "fill_in_the_blank",
+      "question": "In object-oriented programming, a class is a blueprint for creating ___.",
+      "correct_answer": "objects",
+      "explanation": "A class defines the structure and behavior of objects, which are instances of that class."
+    },
+    {
+      "id": 6,
+      "type": "multiple_choice",
+      "question": "What is the difference between '==' and 'is' in Python?",
+      "options": [
+        "'==' checks equality of values, while 'is' checks if two objects are the same instance",
+        "'==' checks the memory address, while 'is' checks the values",
+        "'==' and 'is' are the same",
+        "None of the above"
+      ],
+      "correct_answer": "'==' checks equality of values, while 'is' checks if two objects are the same instance",
+      "explanation": "'==' checks if two objects have the same value, whereas 'is' checks if they refer to the same object in memory."
+    },
+    {
+      "id": 7,
+      "type": "true_false",
+      "question": "In a linked list, accessing an element by index is O(1) time complexity.",
+      "correct_answer": "False",
+      "explanation": "In a linked list, accessing an element by index takes O(n) time as the list must be traversed sequentially."
+    },
+    {
+      "id": 8,
+      "type": "fill_in_the_blank",
+      "question": "In Python, the keyword 'def' is used to define ___.",
+      "correct_answer": "functions",
+      "explanation": "The 'def' keyword in Python is used to define functions."
+    },
+    {
+      "id": 9,
+      "type": "multiple_choice",
+      "question": "Which of the following is a characteristic of a binary search tree?",
+      "options": [
+        "The left subtree contains values greater than the root",
+        "The left subtree contains values smaller than the root",
+        "Each node has two children",
+        "There are no duplicate values in the tree"
+      ],
+      "correct_answer": "The left subtree contains values smaller than the root",
+      "explanation": "In a binary search tree, for each node, all nodes in the left subtree contain values smaller than the node's value, and those in the right subtree contain values greater."
+    },
+    {
+      "id": 10,
+      "type": "multiple_choice",
+      "question": "Which of the following data structures is typically used to implement recursion?",
+      "options": ["Array", "Queue", "Stack", "Linked List"],
+      "correct_answer": "Stack",
+      "explanation": "A stack is used to store function calls in the call stack during recursion, enabling the return of control after a function call."
+    },
+    {
+      "id": 11,
+      "type": "submit_code",
+      "question": "Write a Python function to check if a number is prime.",
+      "code_template": "def is_prime(n):\n    # Your code here\n    pass",
+      "input_placeholder": "Enter your code here...",
+      "correct_answer": "def is_prime(n):\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True",
+      "explanation": "A prime number is a number greater than 1 that has no divisors other than 1 and itself. The function works by checking if the number is divisible by any integer up to its square root."
+    },
+    {
+      "id": 12,
+      "type": "submit_code",
+      "question": "Write a Python function to find the factorial of a number.",
+      "code_template": "def factorial(n):\n    # Your code here\n    pass",
+      "input_placeholder": "Enter your code here...",
+      "correct_answer": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n-1)",
+      "explanation": "The factorial of a number is the product of all positive integers less than or equal to that number. The recursive approach calls the function itself with a reduced value until the base case (n=0) is reached."
+    },
+    {
+      "id": 13,
+      "type": "submit_code",
+      "question": "Write a Python function to reverse a string.",
+      "code_template": "def reverse_string(s):\n    # Your code here\n    pass",
+      "input_placeholder": "Enter your code here...",
+      "correct_answer": "def reverse_string(s):\n    return s[::-1]",
+      "explanation": "In Python, string slicing can be used to reverse a string. The slice `[::-1]` returns the string in reverse order."
+    }
+  ]
+}

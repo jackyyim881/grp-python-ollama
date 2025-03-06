@@ -102,11 +102,11 @@ def render_learning_progress():
             if profile_picture_data:
                 profile_picture = Image.open(BytesIO(profile_picture_data))
                 st.image(profile_picture, width=100,
-                         caption="", use_column_width=False)
+                         caption="", use_container_width=False)
             else:
                 # Default avatar
                 st.image('data/default_avatar.png', width=100,
-                         caption="", use_column_width=False)
+                         caption="", use_container_width=False)
         with col2:
             st.markdown(f"### Welcome, {display_name}!")
             st.write(f"**Email:** {email}")
